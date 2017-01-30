@@ -16,7 +16,7 @@ NAME	 [a-zA-Z][A-Za-z0-9]*
 "then"	        { return THEN; }
 "else"	        { return ELSE; }
 "end if"        { return ENDIF; }
-"begin"	        { return BEGIN; }
+"begin"	        { return FBEGIN; }
 "function"      { return FUNCTION; }
 "end function"  { return ENDFUNCTION; }
 "variables"     { return VARS; }

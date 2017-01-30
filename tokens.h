@@ -1,7 +1,7 @@
 #define FUNCTION 0
 #define RETURNS 1
 #define VARS 2
-#define BEGIN 3
+#define FBEGIN 3
 #define ENDFUNCTION 4
 #define READ 5
 #define WRITE 6
