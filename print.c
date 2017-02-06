@@ -6,10 +6,8 @@ extern int symb;
 extern char * yytext;
 
 char * showSymb(int symb)
-{
-  switch(symb)
-  {
-    case  FUNCTION: return "function";
+{ switch(symb)
+  { case  FUNCTION: return "function";
     case  RETURNS: return "returns";
     case  VARS: return "variables";
     case  FBEGIN: return "begin";
@@ -40,8 +38,7 @@ char * showSymb(int symb)
 }
 
 void printSymb()
-{
-  char * s;
+{ char * s;
   printf("%s ",showSymb(symb));
   if(symb == NAME || symb == NUMBER) {
     if(yytext == NULL) {
