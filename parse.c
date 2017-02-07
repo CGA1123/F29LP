@@ -4,7 +4,7 @@
 
 int symb;
 
-extern printSymb();
+extern void printSymb();
 extern char* showSymb(int);
 extern int yylex(void);
 extern FILE* yyin;
@@ -23,7 +23,8 @@ void condexpr(int depth);
 void bop(int depth);
 void exprs(int depth);
 void expr(int depth);
-
+void read(int depth);
+void write(int depth);
 
 void rule(char * name,int depth)
 { int i;
@@ -145,7 +146,7 @@ void assign(int depth)
 { rule("assign",depth);
   lex(); // lex NAME
   if(symb != ASSIGN) {
-    error("assign","::=");
+    error("assign",":=");
   }
   lex(); // lex ASSIGN
   expr(depth+1);
@@ -153,12 +154,27 @@ void assign(int depth)
 
 void if_statement(int depth)
 { rule("if",depth);
+  lex(); // lex IF
+  condexpr(depth+1);
+  if(symb != THEN) {
+    error("if","then");
+  }
+  lex(); // lex then
+  commands(depth+1);
+  if(symb == ELSE) {
+    lex(); // lex else
+    commands(depth+1);
+  }
+  if(symb != ENDIF) {
+    error("if","end if");
+  }
+  lex(); // lex ENDIF
 }
 
 void while_loop(int depth)
 { rule("while",depth);
   lex(); // lex WHILE
-  bop(depth+1);
+  condexpr(depth+1);
   if(symb != LOOP) {
     error("while","loop");
   }
@@ -172,6 +188,16 @@ void while_loop(int depth)
 
 void condexpr(int depth)
 { rule("condexpr",depth);
+  bop(depth+1);
+  if(symb != LBRA) {
+    error("bop","(");
+  }
+  lex(); // lex LBRA
+  exprs(depth+1);
+  if(symb != RBRA) {
+    error("bop",")");
+  }
+  lex(); // lex RBRA
 }
 
 void bop(int depth)
@@ -187,15 +213,6 @@ void bop(int depth)
               break;
     default: error("bop","Less, LessEq, Eq, or Neq");
   }
-  if(symb != LBRA) {
-    error("bop","(");
-  }
-  lex(); // lex LBRA
-  exprs(depth+1);
-  if(symb != RBRA) {
-    error("bop",")");
-  }
-  lex(); // lex RBRA
 }
 
 void exprs(int depth)
@@ -224,6 +241,21 @@ void expr(int depth)
   } else {
     error("assign","NAME or NUMBER");
   }
+}
+
+void write(int depth) {
+  rule("write",depth);
+  lex(); // lex WRITE
+  expr(depth+1);
+}
+
+void read(int depth) {
+  rule("read",depth);
+  lex(); // lext READ
+  if(symb != NAME) {
+    error("read","NAME");
+  }
+  lex(); // lex NAME
 }
 
 int main(int c,char ** argv)
