@@ -65,13 +65,8 @@ void args(int depth)
 void funcs(int depth)
 { rule("funcs",depth);
   func(depth+1);
-  lex();
-  if(symb != SEMI) {
-    error("funcs",";");
-  }
-  lex();
   if(symb == FUNCTION) {
-    func(depth+1);
+    funcs(depth);
   }
 }
 
@@ -99,18 +94,27 @@ void func(int depth)
     } else {
       lex(); // eat NAME
     }
-  } else if(symb == VARS) {
+  }
+
+  if(symb == VARS) {
     lex(); // eat up VARS
     args(depth+1); // eat up args
-  } else if(symb != FBEGIN) {
+  }
+
+  if(symb != FBEGIN) {
     error("func","begin");
   }
+
   lex(); // eat begin
   commands(depth+1);
   if(symb != ENDFUNCTION) {
     error("func","end function");
   }
   lex(); // eat end function
+  if(symb != SEMI) {
+    error("func",";");
+  }
+  lex(); // lex SEMI
 }
 
 void commands(int depth)
@@ -118,7 +122,7 @@ void commands(int depth)
   command(depth+1);
   if(symb == SEMI) {
     lex(); // eat semi
-    command(depth+1);
+    commands(depth);
   }
 }
 
@@ -134,13 +138,17 @@ void command(int depth)
     read(depth+1);
   } else if(symb == WRITE) {
     write(depth+1);
-  } else {
-    error("command","assign, if, while, read, or write");
   }
 }
 
 void assign(int depth)
 { rule("assign",depth);
+  lex(); // lex NAME
+  if(symb != ASSIGN) {
+    error("assign","::=");
+  }
+  lex(); // lex ASSIGN
+  expr(depth+1);
 }
 
 void if_statement(int depth)
@@ -149,6 +157,17 @@ void if_statement(int depth)
 
 void while_loop(int depth)
 { rule("while",depth);
+  lex(); // lex WHILE
+  bop(depth+1);
+  if(symb != LOOP) {
+    error("while","loop");
+  }
+  lex(); // lex LOOP
+  commands(depth+1);
+  if(symb != ENDLOOP) {
+    error("while","end loop");
+  }
+  lex(); // lex ENDLOOP
 }
 
 void condexpr(int depth)
@@ -157,14 +176,54 @@ void condexpr(int depth)
 
 void bop(int depth)
 { rule("bop",depth);
+  switch(symb)
+  { case LT:  lex();
+              break;
+    case LTE: lex();
+              break;
+    case EQ:  lex();
+              break;
+    case NEQ: lex();
+              break;
+    default: error("bop","Less, LessEq, Eq, or Neq");
+  }
+  if(symb != LBRA) {
+    error("bop","(");
+  }
+  lex(); // lex LBRA
+  exprs(depth+1);
+  if(symb != RBRA) {
+    error("bop",")");
+  }
+  lex(); // lex RBRA
 }
 
 void exprs(int depth)
 { rule("exprs",depth);
+  expr(depth);
+  if(symb == COMMA) {
+    lex(); // eat up COMMA
+    expr(depth);
+  }
 }
 
 void expr(int depth)
 { rule("expr",depth);
+  if(symb == NAME) {
+    lex(); // lex name
+    if(symb == LBRA) {
+      lex(); // lex LBRA
+      exprs(depth+1);
+      if(symb != RBRA) {
+        error("expr",")");
+      }
+      lex(); // lex RBRA
+    }
+  } else if(symb == NUMBER) {
+    lex(); // lex NUMBER
+  } else {
+    error("assign","NAME or NUMBER");
+  }
 }
 
 int main(int c,char ** argv)
