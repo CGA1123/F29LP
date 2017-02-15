@@ -63,6 +63,16 @@ NODE * new_name(char * n)
 	return node;
 }
 
+NODE * new_node(int tag)
+{	NODE * node;
+	node = (NODE *) malloc(sizeof(NODE));
+	node->tag = tag;
+	node->f.b.n1 = NULL;
+	node->f.b.n2 = NULL;
+	return node;
+}
+
+
 // Le rules...
 void program(int depth)
 {	rule("program",depth);
