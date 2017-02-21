@@ -299,7 +299,7 @@ NODE * condexpr(int depth)
 	}
 
 	lex(); // lex LBRA
-	node->b.f.n1 = exprs(depth+1);
+	node->f.b.n1 = exprs(depth+1);
 
 	if (symb != RBRA) {
 		error("bop",")");
@@ -362,7 +362,7 @@ NODE * expr(int depth)
 			lex(); // lex RBRA
 		}
 	} else if (symb == NUMBER) {
-		node = new_number(yytext);
+		node = new_number(atoi(yytext));
 		lex(); // lex NUMBER
 	} else {
 		error("assign","NAME or NUMBER");
