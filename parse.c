@@ -180,19 +180,22 @@ void commands(int depth)
 	}
 }
 
-void command(int depth)
+NODE * command(int depth)
 {	rule("command",depth);
 
-	if (symb == NAME) {
-		assign(depth+1);
-	} else if (symb == IF) {
-		if_statement(depth+1);
-	} else if (symb == WHILE) {
-		while_loop(depth+1);
-	} else if (symb == READ) {
-		read(depth+1);
-	} else if (symb == WRITE) {
-		write(depth+1);
+	switch(symb) {
+	case NAME:
+		return assign(depth+1);
+	case IF:
+		return if_statement(depth+1);
+	case WHILE:
+		return while_loop(depth+1);
+	case READ:
+		return read(depth+1);
+	case WRITE:
+		return write(depth+1);
+	default:
+		return NULL;
 	}
 }
 
