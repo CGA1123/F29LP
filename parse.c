@@ -16,7 +16,7 @@ extern FILE* yyin;
 NODE * program(int depth);
 NODE * args(int depth);
 NODE * funcs(int depth);
-void func(int depth);
+NODE * func(int depth);
 NODE * commands(int depth);
 NODE * command(int depth);
 NODE * assign(int depth);
@@ -117,9 +117,11 @@ NODE * funcs(int depth)
 	return node;
 }
 
-void func(int depth)
+NODE * func(int depth)
 {	rule("func",depth);
 	lex();
+	NODE * node;
+	node = new_node(FUNCTION);
 
 	if (symb != NAME) {
 		error("func","NAME");
@@ -161,7 +163,8 @@ void func(int depth)
 	}
 
 	lex(); // eat begin
-	commands(depth+1);
+
+	node->f.b.n2 = commands(depth+1);
 
 	if (symb != ENDFUNCTION) {
 		error("func","end function");
@@ -174,6 +177,8 @@ void func(int depth)
 	}
 
 	lex(); // lex SEMI
+
+	return node;
 }
 
 NODE * commands(int depth)
@@ -320,6 +325,7 @@ NODE * bop(int depth)
 	case EQ:
 	case NEQ:
 		node = new_node(symb);
+		break;
 	default: error("bop","Less, LessEq, Eq, or Neq");
 	}
 
