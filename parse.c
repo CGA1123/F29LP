@@ -120,12 +120,18 @@ NODE * funcs(int depth)
 NODE * func(int depth)
 {	rule("func",depth);
 	lex();
-	NODE * node;
+	NODE * node, * definition, * arguments, * returns, * variables;
+	arguments = NULL;
+	returns = NULL;
+	variables = NULL;
 	node = new_node(FUNCTION);
-
+	definition = new_node(FBEGIN); /* holds non option info (name + cmds) */
+	node->f.b.n2 = definition;
 	if (symb != NAME) {
 		error("func","NAME");
 	}
+
+	definition->f.b.n1 = new_name(yytext);
 
 	lex();
 
@@ -136,7 +142,7 @@ NODE * func(int depth)
 	lex();
 
 	if (symb == NAME) {
-		args(depth+1);
+		arguments = args(depth+1);
 	} else if (symb != RBRA) {
 		error("func",")");
 	}
@@ -149,13 +155,16 @@ NODE * func(int depth)
 		if (symb != NAME) {
 			error("func","NAME");
 		} else {
+			returns = new_node(RETURNS);
+			returns->f.b.n1 = new_name(yytext);
 			lex(); // eat NAME
 		}
 	}
 
 	if (symb == VARS) {
 		lex(); // eat up VARS
-		args(depth+1); // eat up args
+		variables = new_node(VARS);
+		variables->f.b.n1 = args(depth+1); // eat up args
 	}
 
 	if (symb != FBEGIN) {
@@ -164,7 +173,7 @@ NODE * func(int depth)
 
 	lex(); // eat begin
 
-	node->f.b.n2 = commands(depth+1);
+	definition->f.b.n2 = commands(depth+1);
 
 	if (symb != ENDFUNCTION) {
 		error("func","end function");
@@ -177,6 +186,16 @@ NODE * func(int depth)
 	}
 
 	lex(); // lex SEMI
+
+	NODE * optional_return = new_node(RBRA);
+	optional_return->f.b.n1 = returns;
+	optional_return->f.b.n2 = variables;
+
+	NODE * optional_args = new_node(RBRA);
+	optional_args->f.b.n1 = arguments;
+	optional_args->f.b.n2 = optional_return;
+
+	node->f.b.n1 = optional_args;
 
 	return node;
 }
