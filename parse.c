@@ -22,10 +22,10 @@ NODE * command(int depth);
 NODE * assign(int depth);
 NODE * if_statement(int depth);
 NODE * while_loop(int depth);
-void condexpr(int depth);
-void bop(int depth);
-void exprs(int depth);
-void expr(int depth);
+NODE * condexpr(int depth);
+NODE * bop(int depth);
+NODE * exprs(int depth);
+NODE * expr(int depth);
 NODE * read(int depth);
 NODE * write(int depth);
 
@@ -284,58 +284,71 @@ NODE * while_loop(int depth)
 	return node;
 }
 
-void condexpr(int depth)
+NODE * condexpr(int depth)
 {	rule("condexpr",depth);
-	bop(depth+1);
+	NODE * node;
+	node = bop(depth+1);
 
 	if (symb != LBRA) {
 		error("bop","(");
 	}
 
 	lex(); // lex LBRA
-	exprs(depth+1);
+	node->b.f.n1 = exprs(depth+1);
 
 	if (symb != RBRA) {
 		error("bop",")");
 	}
 
 	lex(); // lex RBRA
+
+	return node;
 }
 
-void bop(int depth)
+NODE * bop(int depth)
 {	rule("bop",depth);
+	NODE * node;
+
 	switch (symb){
-	case LT:  lex();
-		break;
-	case LTE: lex();
-		break;
-	case EQ:  lex();
-		break;
-	case NEQ: lex();
-		break;
+	case LT:
+	case LTE:
+	case EQ:
+	case NEQ:
+		node = new_node(symb);
 	default: error("bop","Less, LessEq, Eq, or Neq");
 	}
+
+	lex();
+
+	return node;
 }
 
-void exprs(int depth)
+NODE * exprs(int depth)
 {	rule("exprs",depth);
-	expr(depth);
+	NODE * node;
+	node = new_node(COMMA);
+	node->f.b.n1 = expr(depth);
 
 	if (symb == COMMA) {
 		lex(); // eat up COMMA
-		expr(depth);
+		node->f.b.n2 = expr(depth);
 	}
+
+	return node;
 }
 
-void expr(int depth)
+NODE * expr(int depth)
 {	rule("expr",depth);
+	NODE * node;
 
 	if (symb == NAME) {
+		node = new_node(LBRA);
+		node->f.b.n1 = new_name(yytext);
 		lex(); // lex name
 
 		if (symb == LBRA) {
 			lex(); // lex LBRA
-			exprs(depth+1);
+			node->f.b.n2 = exprs(depth+1);
 
 			if (symb != RBRA) {
 				error("expr",")");
@@ -344,10 +357,13 @@ void expr(int depth)
 			lex(); // lex RBRA
 		}
 	} else if (symb == NUMBER) {
+		node = new_number(yytext);
 		lex(); // lex NUMBER
 	} else {
 		error("assign","NAME or NUMBER");
 	}
+
+	return node;
 }
 
 NODE * write(int depth) {
