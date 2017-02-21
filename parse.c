@@ -12,7 +12,7 @@ extern int yylex(void);
 extern char* yytext;
 extern FILE* yyin;
 
-// prototypes
+/* prototypes */
 NODE * program(int depth);
 NODE * args(int depth);
 NODE * funcs(int depth);
@@ -74,7 +74,7 @@ NODE * new_node(int tag)
 }
 
 
-// Le rules...
+/* Le rules... */
 NODE * program(int depth)
 {	rule("program",depth);
 
@@ -93,10 +93,10 @@ NODE * args(int depth)
 	NODE * node;
 	node = new_node(COMMA);
 	node->f.b.n1 = new_name(yytext);
-	lex(); // eat up NAME
+	lex(); /* eat up NAME */
 
 	if (symb == COMMA) {
-		lex(); // eat up COMMA
+		lex(); /* eat up COMMA */
 		node->f.b.n2 = args(depth);
 	}
 
@@ -150,28 +150,28 @@ NODE * func(int depth)
 	lex();
 
 	if (symb == RETURNS) {
-		lex(); // eat up RETURNS
+		lex(); /* eat up RETURNS */
 
 		if (symb != NAME) {
 			error("func","NAME");
 		} else {
 			returns = new_node(RETURNS);
 			returns->f.b.n1 = new_name(yytext);
-			lex(); // eat NAME
+			lex(); /* eat NAME */
 		}
 	}
 
 	if (symb == VARS) {
-		lex(); // eat up VARS
+		lex(); /* eat up VARS */
 		variables = new_node(VARS);
-		variables->f.b.n1 = args(depth+1); // eat up args
+		variables->f.b.n1 = args(depth+1); /* eat up args */
 	}
 
 	if (symb != FBEGIN) {
 		error("func","begin");
 	}
 
-	lex(); // eat begin
+	lex(); /* eat begin */
 
 	definition->f.b.n2 = commands(depth+1);
 
@@ -179,13 +179,13 @@ NODE * func(int depth)
 		error("func","end function");
 	}
 
-	lex(); // eat end function
+	lex(); /* eat end function */
 
 	if (symb != SEMI) {
 		error("func",";");
 	}
 
-	lex(); // lex SEMI
+	lex(); /* lex SEMI */
 
 	NODE * optional_return = new_node(RBRA);
 	optional_return->f.b.n1 = returns;
@@ -208,7 +208,7 @@ NODE * commands(int depth)
 	node->f.b.n1 = command(depth+1);
 
 	if (symb == SEMI) {
-		lex(); // eat semi
+		lex(); /* eat semi */
 		node->f.b.n2 = commands(depth);
 	}
 
@@ -241,14 +241,14 @@ NODE * assign(int depth)
 
 	node->f.b.n1 = new_name(yytext);
 
-	lex(); // lex NAME
+	lex(); /* lex NAME */
 
 
 	if (symb != ASSIGN) {
 		error("assign",":=");
 	}
 
-	lex(); // lex ASSIGN
+	lex(); /* lex ASSIGN */
 
 	node->f.b.n2 = expr(depth+1);
 
@@ -257,7 +257,7 @@ NODE * assign(int depth)
 
 NODE * if_statement(int depth)
 {	rule("if",depth);
-	lex(); // lex IF
+	lex(); /* lex IF */
 
 	NODE * node, * if_commands, * else_node;
 	node = new_node(IF);
@@ -268,12 +268,12 @@ NODE * if_statement(int depth)
 		error("if","then");
 	}
 
-	lex(); // lex then
+	lex(); /* lex then */
 	if_commands = commands(depth+1);
 	node->f.b.n2 = if_commands;
 
 	if (symb == ELSE) {
-		lex(); // lex else
+		lex(); /* lex else */
 		else_node = new_node(ELSE);
 		node->f.b.n2 = else_node;
 		else_node->f.b.n1 = if_commands;
@@ -284,14 +284,14 @@ NODE * if_statement(int depth)
 		error("if","end if");
 	}
 
-	lex(); // lex ENDIF
+	lex(); /* lex ENDIF */
 
 	return node;
 }
 
 NODE * while_loop(int depth)
 {	rule("while",depth);
-	lex(); // lex WHILE
+	lex(); /* lex WHILE */
 	NODE * node;
 	node = new_node(WHILE);
 
@@ -301,14 +301,14 @@ NODE * while_loop(int depth)
 		error("while","loop");
 	}
 
-	lex(); // lex LOOP
+	lex(); /* lex LOOP */
 	node->f.b.n2 = commands(depth+1);
 
 	if (symb != ENDLOOP) {
 		error("while","end loop");
 	}
 
-	lex(); // lex ENDLOOP
+	lex(); /* lex ENDLOOP */
 
 	return node;
 }
@@ -322,14 +322,14 @@ NODE * condexpr(int depth)
 		error("bop","(");
 	}
 
-	lex(); // lex LBRA
+	lex(); /* lex LBRA */
 	node->f.b.n1 = exprs(depth+1);
 
 	if (symb != RBRA) {
 		error("bop",")");
 	}
 
-	lex(); // lex RBRA
+	lex(); /* lex RBRA */
 
 	return node;
 }
@@ -360,7 +360,7 @@ NODE * exprs(int depth)
 	node->f.b.n1 = expr(depth);
 
 	if (symb == COMMA) {
-		lex(); // eat up COMMA
+		lex(); /* eat up COMMA */
 		node->f.b.n2 = expr(depth);
 	}
 
@@ -374,21 +374,21 @@ NODE * expr(int depth)
 	if (symb == NAME) {
 		node = new_node(LBRA);
 		node->f.b.n1 = new_name(yytext);
-		lex(); // lex name
+		lex(); /* lex name */
 
 		if (symb == LBRA) {
-			lex(); // lex LBRA
+			lex(); /* lex LBRA */
 			node->f.b.n2 = exprs(depth+1);
 
 			if (symb != RBRA) {
 				error("expr",")");
 			}
 
-			lex(); // lex RBRA
+			lex(); /* lex RBRA */
 		}
 	} else if (symb == NUMBER) {
 		node = new_number(atoi(yytext));
-		lex(); // lex NUMBER
+		lex(); /* lex NUMBER */
 	} else {
 		error("assign","NAME or NUMBER");
 	}
@@ -400,7 +400,7 @@ NODE * write(int depth) {
 	rule("write",depth);
 	NODE * node;
 	node = new_node(WRITE);
-	lex(); // lex WRITE
+	lex(); /* lex WRITE */
 	node->f.b.n1 = expr(depth+1);
 
 	return node;
@@ -408,7 +408,7 @@ NODE * write(int depth) {
 
 NODE * read(int depth) {
 	rule("read",depth);
-	lex(); // lext READ
+	lex(); /* lext READ */
 	NODE * node;
 	node = new_node(READ);
 
@@ -417,7 +417,7 @@ NODE * read(int depth) {
 	}
 
 	node->f.b.n1 = new_name(yytext);
-	lex(); // lex NAME
+	lex(); /* lex NAME */
 
 	return node;
 }
