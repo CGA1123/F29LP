@@ -14,7 +14,7 @@ extern FILE* yyin;
 
 // prototypes
 NODE * program(int depth);
-void args(int depth);
+NODE * args(int depth);
 NODE * funcs(int depth);
 void func(int depth);
 NODE * commands(int depth);
@@ -88,14 +88,19 @@ NODE * program(int depth)
 	return node;
 }
 
-void args(int depth)
+NODE * args(int depth)
 {	rule("args",depth);
+	NODE * node;
+	node = new_node(COMMA);
+	node->f.b.n1 = new_name(yytext);
 	lex(); // eat up NAME
 
 	if (symb == COMMA) {
 		lex(); // eat up COMMA
-		args(depth);
+		node->f.b.n2 = args(depth);
 	}
+
+	return node;
 }
 
 NODE * funcs(int depth)
