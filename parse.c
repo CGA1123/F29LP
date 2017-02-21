@@ -12,9 +12,9 @@ extern int yylex(void);
 extern FILE* yyin;
 
 // prototypes
-void program(int depth);
+NODE * program(int depth);
 void args(int depth);
-void funcs(int depth);
+NODE * funcs(int depth);
 void func(int depth);
 void commands(int depth);
 void command(int depth);
@@ -74,14 +74,17 @@ NODE * new_node(int tag)
 
 
 // Le rules...
-void program(int depth)
+NODE * program(int depth)
 {	rule("program",depth);
 
+	NODE * node;
 	if (symb == FUNCTION) {
-		funcs(depth+1);
+		node = funcs(depth+1);
 	} else {
 		error("program","function declaration");
 	}
+
+	return node;
 }
 
 void args(int depth)
@@ -94,13 +97,18 @@ void args(int depth)
 	}
 }
 
-void funcs(int depth)
+NODE * funcs(int depth)
 {	rule("funcs",depth);
-	func(depth+1);
+	NODE * node;
+	node = new_node(SEMI);
+
+	node->f.b.n1 = func(depth+1);
 
 	if (symb == FUNCTION) {
-		funcs(depth);
+		node->f.b.n2 = funcs(depth);
 	}
+
+	return node;
 }
 
 void func(int depth)
