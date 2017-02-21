@@ -10,7 +10,8 @@ parser:
 	gcc -c lex.yy.c
 	gcc -c parse.c
 	gcc -c print.c
-	gcc -o parser print.o lex.yy.o parse.o
+	gcc -c pretty.c
+	gcc -o parser print.o pretty.o lex.yy.o parse.o
 
 clean:
 	rm -rf *.o simp.c lex.yy.c lexical parser

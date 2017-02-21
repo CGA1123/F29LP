@@ -9,24 +9,25 @@ int symb;
 extern void printSymb();
 extern char* showSymb(int);
 extern int yylex(void);
+extern char* yytext;
 extern FILE* yyin;
 
 // prototypes
-void program(int depth);
-void args(int depth);
-void funcs(int depth);
-void func(int depth);
-void commands(int depth);
-void command(int depth);
-void assign(int depth);
-void if_statement(int depth);
-void while_loop(int depth);
-void condexpr(int depth);
-void bop(int depth);
-void exprs(int depth);
-void expr(int depth);
-void read(int depth);
-void write(int depth);
+NODE * program(int depth);
+NODE * args(int depth);
+NODE * funcs(int depth);
+NODE * func(int depth);
+NODE * commands(int depth);
+NODE * command(int depth);
+NODE * assign(int depth);
+NODE * if_statement(int depth);
+NODE * while_loop(int depth);
+NODE * condexpr(int depth);
+NODE * bop(int depth);
+NODE * exprs(int depth);
+NODE * expr(int depth);
+NODE * read(int depth);
+NODE * write(int depth);
 
 void rule(char * name,int depth)
 {	int i;
@@ -74,42 +75,63 @@ NODE * new_node(int tag)
 
 
 // Le rules...
-void program(int depth)
+NODE * program(int depth)
 {	rule("program",depth);
 
+	NODE * node;
 	if (symb == FUNCTION) {
-		funcs(depth+1);
+		node = funcs(depth+1);
 	} else {
 		error("program","function declaration");
 	}
+
+	return node;
 }
 
-void args(int depth)
+NODE * args(int depth)
 {	rule("args",depth);
+	NODE * node;
+	node = new_node(COMMA);
+	node->f.b.n1 = new_name(yytext);
 	lex(); // eat up NAME
 
 	if (symb == COMMA) {
 		lex(); // eat up COMMA
-		args(depth);
+		node->f.b.n2 = args(depth);
 	}
+
+	return node;
 }
 
-void funcs(int depth)
+NODE * funcs(int depth)
 {	rule("funcs",depth);
-	func(depth+1);
+	NODE * node;
+	node = new_node(SEMI);
+
+	node->f.b.n1 = func(depth+1);
 
 	if (symb == FUNCTION) {
-		funcs(depth);
+		node->f.b.n2 = funcs(depth);
 	}
+
+	return node;
 }
 
-void func(int depth)
+NODE * func(int depth)
 {	rule("func",depth);
 	lex();
-
+	NODE * node, * definition, * arguments, * returns, * variables;
+	arguments = NULL;
+	returns = NULL;
+	variables = NULL;
+	node = new_node(FUNCTION);
+	definition = new_node(FBEGIN); /* holds non option info (name + cmds) */
+	node->f.b.n2 = definition;
 	if (symb != NAME) {
 		error("func","NAME");
 	}
+
+	definition->f.b.n1 = new_name(yytext);
 
 	lex();
 
@@ -120,7 +142,7 @@ void func(int depth)
 	lex();
 
 	if (symb == NAME) {
-		args(depth+1);
+		arguments = args(depth+1);
 	} else if (symb != RBRA) {
 		error("func",")");
 	}
@@ -133,13 +155,16 @@ void func(int depth)
 		if (symb != NAME) {
 			error("func","NAME");
 		} else {
+			returns = new_node(RETURNS);
+			returns->f.b.n1 = new_name(yytext);
 			lex(); // eat NAME
 		}
 	}
 
 	if (symb == VARS) {
 		lex(); // eat up VARS
-		args(depth+1); // eat up args
+		variables = new_node(VARS);
+		variables->f.b.n1 = args(depth+1); // eat up args
 	}
 
 	if (symb != FBEGIN) {
@@ -147,7 +172,8 @@ void func(int depth)
 	}
 
 	lex(); // eat begin
-	commands(depth+1);
+
+	definition->f.b.n2 = commands(depth+1);
 
 	if (symb != ENDFUNCTION) {
 		error("func","end function");
@@ -160,37 +186,63 @@ void func(int depth)
 	}
 
 	lex(); // lex SEMI
+
+	NODE * optional_return = new_node(RBRA);
+	optional_return->f.b.n1 = returns;
+	optional_return->f.b.n2 = variables;
+
+	NODE * optional_args = new_node(RBRA);
+	optional_args->f.b.n1 = arguments;
+	optional_args->f.b.n2 = optional_return;
+
+	node->f.b.n1 = optional_args;
+
+	return node;
 }
 
-void commands(int depth)
+NODE * commands(int depth)
 {	rule("commands",depth);
-	command(depth+1);
+	NODE * node;
+	node = new_node(SEMI);
+
+	node->f.b.n1 = command(depth+1);
 
 	if (symb == SEMI) {
 		lex(); // eat semi
-		commands(depth);
+		node->f.b.n2 = commands(depth);
 	}
+
+	return node;
 }
 
-void command(int depth)
+NODE * command(int depth)
 {	rule("command",depth);
 
-	if (symb == NAME) {
-		assign(depth+1);
-	} else if (symb == IF) {
-		if_statement(depth+1);
-	} else if (symb == WHILE) {
-		while_loop(depth+1);
-	} else if (symb == READ) {
-		read(depth+1);
-	} else if (symb == WRITE) {
-		write(depth+1);
+	switch(symb) {
+	case NAME:
+		return assign(depth+1);
+	case IF:
+		return if_statement(depth+1);
+	case WHILE:
+		return while_loop(depth+1);
+	case READ:
+		return read(depth+1);
+	case WRITE:
+		return write(depth+1);
+	default:
+		return NULL;
 	}
 }
 
-void assign(int depth)
+NODE * assign(int depth)
 {	rule("assign",depth);
+	NODE * node;
+	node = new_node(ASSIGN);
+
+	node->f.b.n1 = new_name(yytext);
+
 	lex(); // lex NAME
+
 
 	if (symb != ASSIGN) {
 		error("assign",":=");
@@ -198,24 +250,34 @@ void assign(int depth)
 
 	lex(); // lex ASSIGN
 
-	expr(depth+1);
+	node->f.b.n2 = expr(depth+1);
+
+	return node;
 }
 
-void if_statement(int depth)
+NODE * if_statement(int depth)
 {	rule("if",depth);
 	lex(); // lex IF
-	condexpr(depth+1);
+
+	NODE * node, * if_commands, * else_node;
+	node = new_node(IF);
+
+	node->f.b.n1 = condexpr(depth+1);
 
 	if (symb != THEN) {
 		error("if","then");
 	}
 
 	lex(); // lex then
-	commands(depth+1);
+	if_commands = commands(depth+1);
+	node->f.b.n2 = if_commands;
 
 	if (symb == ELSE) {
 		lex(); // lex else
-		commands(depth+1);
+		else_node = new_node(ELSE);
+		node->f.b.n2 = else_node;
+		else_node->f.b.n1 = if_commands;
+		else_node->f.b.n2 = commands(depth+1);
 	}
 
 	if (symb != ENDIF) {
@@ -223,79 +285,100 @@ void if_statement(int depth)
 	}
 
 	lex(); // lex ENDIF
+
+	return node;
 }
 
-void while_loop(int depth)
+NODE * while_loop(int depth)
 {	rule("while",depth);
 	lex(); // lex WHILE
-	condexpr(depth+1);
+	NODE * node;
+	node = new_node(WHILE);
+
+	node->f.b.n1 = condexpr(depth+1);
 
 	if (symb != LOOP) {
 		error("while","loop");
 	}
 
 	lex(); // lex LOOP
-	commands(depth+1);
+	node->f.b.n2 = commands(depth+1);
 
 	if (symb != ENDLOOP) {
 		error("while","end loop");
 	}
 
 	lex(); // lex ENDLOOP
+
+	return node;
 }
 
-void condexpr(int depth)
+NODE * condexpr(int depth)
 {	rule("condexpr",depth);
-	bop(depth+1);
+	NODE * node;
+	node = bop(depth+1);
 
 	if (symb != LBRA) {
 		error("bop","(");
 	}
 
 	lex(); // lex LBRA
-	exprs(depth+1);
+	node->f.b.n1 = exprs(depth+1);
 
 	if (symb != RBRA) {
 		error("bop",")");
 	}
 
 	lex(); // lex RBRA
+
+	return node;
 }
 
-void bop(int depth)
+NODE * bop(int depth)
 {	rule("bop",depth);
+	NODE * node;
+
 	switch (symb){
-	case LT:  lex();
-		break;
-	case LTE: lex();
-		break;
-	case EQ:  lex();
-		break;
-	case NEQ: lex();
+	case LT:
+	case LTE:
+	case EQ:
+	case NEQ:
+		node = new_node(symb);
 		break;
 	default: error("bop","Less, LessEq, Eq, or Neq");
 	}
+
+	lex();
+
+	return node;
 }
 
-void exprs(int depth)
+NODE * exprs(int depth)
 {	rule("exprs",depth);
-	expr(depth);
+	NODE * node;
+	node = new_node(COMMA);
+	node->f.b.n1 = expr(depth);
 
 	if (symb == COMMA) {
 		lex(); // eat up COMMA
-		expr(depth);
+		node->f.b.n2 = expr(depth);
 	}
+
+	return node;
 }
 
-void expr(int depth)
+NODE * expr(int depth)
 {	rule("expr",depth);
+	NODE * node;
 
 	if (symb == NAME) {
+		node = new_node(LBRA);
+		node->f.b.n1 = new_name(yytext);
 		lex(); // lex name
 
 		if (symb == LBRA) {
 			lex(); // lex LBRA
-			exprs(depth+1);
+			node->f.b.n2 = exprs(depth+1);
 
 			if (symb != RBRA) {
 				error("expr",")");
@@ -304,27 +387,39 @@ void expr(int depth)
 			lex(); // lex RBRA
 		}
 	} else if (symb == NUMBER) {
+		node = new_number(atoi(yytext));
 		lex(); // lex NUMBER
 	} else {
 		error("assign","NAME or NUMBER");
 	}
+
+	return node;
 }
 
-void write(int depth) {
+NODE * write(int depth) {
 	rule("write",depth);
+	NODE * node;
+	node = new_node(WRITE);
 	lex(); // lex WRITE
-	expr(depth+1);
+	node->f.b.n1 = expr(depth+1);
+
+	return node;
 }
 
-void read(int depth) {
+NODE * read(int depth) {
 	rule("read",depth);
 	lex(); // lext READ
+	NODE * node;
+	node = new_node(READ);
 
 	if (symb != NAME) {
 		error("read","NAME");
 	}
 
+	node->f.b.n1 = new_name(yytext);
 	lex(); // lex NAME
+
+	return node;
 }
 
 int main(int c,char ** argv)
@@ -334,7 +429,8 @@ int main(int c,char ** argv)
 	}
 
 	symb = yylex();
-	program(1);
+	NODE * tree = program(1);
 	fclose(yyin);
+	prettytree(tree, 0);
 	return 0;
 }
