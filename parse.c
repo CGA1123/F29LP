@@ -410,7 +410,8 @@ int main(int c,char ** argv)
 	}
 
 	symb = yylex();
-	program(1);
+	NODE * tree = program(1);
 	fclose(yyin);
+	prettytree(tree, 0);
 	return 0;
 }
