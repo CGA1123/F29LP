@@ -143,7 +143,9 @@ NODE * func(int depth)
 
 	if (symb == NAME) {
 		arguments = args(depth+1);
-	} else if (symb != RBRA) {
+	}
+
+	if (symb != RBRA) {
 		error("func",")");
 	}
 
@@ -210,6 +212,8 @@ NODE * commands(int depth)
 	if (symb == SEMI) {
 		lex(); /* eat semi */
 		node->f.b.n2 = commands(depth);
+	} else {
+		error("commands", ";");
 	}
 
 	return node;
