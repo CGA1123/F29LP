@@ -426,6 +426,7 @@ NODE * read(int depth) {
 	return node;
 }
 
+/*
 int main(int c,char ** argv)
 {	if ((yyin=fopen(argv[1],"r"))==NULL) {
 		printf("can't open %s\n",argv[1]);
@@ -438,3 +439,4 @@ int main(int c,char ** argv)
 	prettytree(tree, 0);
 	return 0;
 }
+*/
