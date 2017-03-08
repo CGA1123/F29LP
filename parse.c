@@ -211,7 +211,9 @@ NODE * commands(int depth)
 
 	if (symb == SEMI) {
 		lex(); /* eat semi */
-		node->f.b.n2 = commands(depth);
+		/* check if we have more commands... */
+		if(symb == NAME || symb == IF || symb == WHILE || symb == READ || symb == WRITE)
+			node->f.b.n2 = commands(depth);
 	} else {
 		error("commands", ";");
 	}
