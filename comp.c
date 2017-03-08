@@ -16,7 +16,7 @@ extern char * showSymb(int);
 #define MAXREG 20		/* $s0-$s7, $t0-$t7, $a0-$a3 */
 #define E1 MAXREG		/* $t8 */
 #define E2 MAXREG+1		/* $t9 */
-#define R0 MAXREG+2		/* $r0 */
+#define V0 MAXREG+2		/* $v0 */
 char * registers[MAXREG];	/* store what var is assocd to a register */
 int rp, label_no;		/* track next free register index, and what
 				 * label number we are on. */
@@ -72,6 +72,30 @@ NODE * find_function(char * func_name, NODE * program) {
 	exit(1);
 }
 
+/* helper to remove main func from the AST (makes it easier to iterate later on */
+NODE * remove_function(NODE * program, NODE * main)
+{
+	NODE * previous = NULL;
+	NODE * current = program;
+	while(1) {
+		if(current->f.b.n1 == main) {
+			if(previous == NULL) {
+				return current->f.b.n2;
+			} else {
+				/* get rid of main */
+				previous->f.b.n2 = current->f.b.n2;
+				return program;
+			}
+			break;
+		} else {
+			previous = current;
+			current = current->f.b.n2;
+		}
+	}
+
+	return program;
+}
+
 void compile_func(NODE * func)
 {}
 
@@ -81,6 +105,7 @@ void compile_funcs(NODE * funcs)
 void compile_program(NODE * program)
 {
 	NODE * main = find_function("Main", program);
+	NODE * funcs = remove_function(program, main);
 	/* print assembly things */
 	printf("\t.data\n");
 	printf("sinp:\t.asciiz \"INPUT> \"\n");
@@ -93,7 +118,7 @@ void compile_program(NODE * program)
 	printf("\tsyscall\n\n");
 
 	/* print out all other functions... */
-	compile_funcs(program);
+	compile_funcs(funcs);
 
 	return;
 }
