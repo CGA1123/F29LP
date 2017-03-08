@@ -13,10 +13,14 @@ extern FILE * yyin;
 extern char * showSymb(int);
 
 /* our registers */
-#define MAXREG 20		/* $s0-$s7, $t0-$t7, $a0-$a3 */
-#define E1 MAXREG		/* $t8 */
-#define E2 MAXREG+1		/* $t9 */
-#define V0 MAXREG+2		/* $v0 */
+#define MAXREG 20		/* $s0-$s7, $t0-$t7 */
+#define A0 MAXREG		/* $a0 */
+#define A1 MAXREG+1		/* $a1 */
+#define A2 MAXREG+2		/* $a2 */
+#define A3 MAXREG+3		/* $a3 */
+#define E1 MAXREG+4		/* $t8 */
+#define E2 MAXREG+5		/* $t9 */
+#define V0 MAXREG+6		/* $v0 */
 char * registers[MAXREG];	/* store what var is assocd to a register */
 int rp, label_no;		/* track next free register index, and what
 				 * label number we are on. */
@@ -41,14 +45,16 @@ char * regname(int r)
 	switch(r) {
 	case E1: return "$t8";
 	case E2: return "$t9";
-	case R0: return "$r0";
+	case A0: return "$a0";
+	case A1: return "$a1";
+	case A2: return "$a2";
+	case A3: return "$a3";
+	case V0: return "$v0";
 	default:
 		if(r<8) {
 			sprintf(rnum, "$s%d", r);
-		} else if(r<16) {
-			sprintf(rnum, "$t%d", r);
 		} else {
-			sprintf(rnum, "$a%d", r);
+			sprintf(rnum, "$t%d", r);
 		}
 		return strdup(rnum);
 	}
@@ -97,7 +103,27 @@ NODE * remove_function(NODE * program, NODE * main)
 }
 
 void compile_func(NODE * func)
-{}
+{
+	NODE *args, *vars, *commands, *returns;
+	args = (func->f.b.n1)->f.b.n1;
+	returns = ((func->f.b.n1)->f.b.n2)->f.b.n1;
+	vars = ((func->f.b.n1)->f.b.n2)->f.b.n2;
+	commands = (func->f.b.n2)->f.b.n2;
+	/* ASSIGN ARGS */
+	/* ASSIGN RETURN */
+	/* ASSIGN VARS */
+	/* COMMANDS */
+	/* RETURN */
+	if(returns != NULL) {
+		char * return_var = (returns->f.b.n1)->f.id;
+		int return_var_reg = find_var(return_var);
+		if(return_var_reg == -1) {
+			fprintf(stderr, "Return var %s not defined.\n", return_var);
+			exit(1);
+		}
+		printf("\tadd $v0,%s,0", regname(return_var_reg));
+	}
+}
 
 void compile_funcs(NODE * funcs)
 {}
