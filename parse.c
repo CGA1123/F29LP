@@ -30,10 +30,10 @@ NODE * read(int depth);
 NODE * write(int depth);
 
 void rule(char * name,int depth)
-{	int i;
+{/*	int i;
 	for(i=0;i<depth;i++)
 		printf(" ");
-	printf("%s\n",name);
+	printf("%s\n",name); */
 }
 
 void error(char * rule,char * message)
