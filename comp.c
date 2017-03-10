@@ -13,7 +13,7 @@ extern FILE * yyin;
 extern char * showSymb(int);
 
 /* our registers */
-#define MAXREG 20		/* $s0-$s7, $t0-$t7 */
+#define MAXREG 16		/* $s0-$s7, $t0-$t7 */
 #define A0 MAXREG		/* $a0 */
 #define A1 MAXREG+1		/* $a1 */
 #define A2 MAXREG+2		/* $a2 */
@@ -22,26 +22,40 @@ extern char * showSymb(int);
 #define E2 MAXREG+5		/* $t9 */
 #define V0 MAXREG+6		/* $v0 */
 char * registers[MAXREG];	/* store what var is assocd to a register */
-int rp, label_no;		/* track next free register index, and what
-				 * label number we are on. */
+char * argv[4];
+char * v0s;
+int rp, rb, label_no, argc;		/* track next free register index, and what
+								 * label number we are on. */
 
 /* return index of register where a var is stored
  * returns -1 if no var found */
 int findvar(char * id)
 {
 	int i;
-	for(i=0; i<rp; i++) {
+	for(i=rb; i<rp; i++) {
 		if(strcmp(id, registers[i]) == 0) {
 			return i;
 		}
 	}
+
+	for(i=MAXREG; i<(argc+MAXREG); i++) {
+		argv[i-MAXREG];
+		if(strcmp(id, argv[i-MAXREG]) == 0) {
+			return i;
+		}
+	}
+
+	if(strcmp(id, v0s) == 0) {
+		return V0;
+	}
+
 	return -1;
 }
 
 /* return name of a register associated with an index */
 char * regname(int r)
 {
-	char rnum[3];
+	char rnum[4];
 	switch(r) {
 	case E1: return "$t8";
 	case E2: return "$t9";
@@ -54,7 +68,7 @@ char * regname(int r)
 		if(r<8) {
 			sprintf(rnum, "$s%d", r);
 		} else {
-			sprintf(rnum, "$t%d", r);
+			sprintf(rnum, "$t%d", r-8);
 		}
 		return strdup(rnum);
 	}
@@ -110,23 +124,75 @@ void compile_func(NODE * func)
 	vars = ((func->f.b.n1)->f.b.n2)->f.b.n2;
 	commands = (func->f.b.n2)->f.b.n2;
 	/* ASSIGN ARGS */
-	/* ASSIGN RETURN */
-	/* ASSIGN VARS */
-	/* COMMANDS */
-	/* RETURN */
-	if(returns != NULL) {
-		char * return_var = (returns->f.b.n1)->f.id;
-		int return_var_reg = find_var(return_var);
-		if(return_var_reg == -1) {
-			fprintf(stderr, "Return var %s not defined.\n", return_var);
-			exit(1);
+	argc = 0;
+	if(args != NULL) {
+		NODE * current =  args;
+		while(1) {
+			if(argc > 3) {
+				fprintf(stderr, "Max 4 args allowed.\n");
+				exit(1);
+			}
+
+			argv[argc] = strdup((current->f.b.n1)->f.id);
+			argc++;
+			fprintf(stderr, "Assigning %s to register %s\n",
+					argv[argc-1],
+					regname(findvar(argv[argc-1])));
+
+			if(current->f.b.n2 == NULL) {
+				break;
+			} else {
+				current = current->f.b.n2;
+			}
 		}
-		printf("\tadd $v0,%s,0", regname(return_var_reg));
 	}
+	/* ASSIGN RETURNS */
+	v0s = "";
+	if(returns != NULL) {
+		v0s = strdup(returns->f.b.n1->f.id);
+		fprintf(stderr, "Assigning %s to register %s\n",
+				v0s,
+				regname(findvar(v0s)));
+	}
+	/* ASSIGN VARS */
+	if(vars != NULL) {
+		NODE * current = vars->f.b.n1;
+		int i = 0;
+		while(1) {
+			if(i>7) {
+				fprintf(stderr, "Max 8 vars allowed\n");
+				exit(1);
+			}
+			registers[rp] = strdup((current->f.b.n1)->f.id);
+			rp++;
+			i++;
+			fprintf(stderr, "Assigning %s to register %s\n",
+					registers[rp-1],
+					regname(findvar(registers[rp-1])));
+
+			if(current->f.b.n2 == NULL) {
+				break;
+			} else {
+				current = current->f.b.n2;
+			}
+		}
+	}
+	/* COMMANDS */
 }
 
 void compile_funcs(NODE * funcs)
-{}
+{
+	char * name = (((funcs->f.b.n1)->f.b.n2)->f.b.n1)->f.id;
+	printf("%s:", name);
+	rp = 8;
+	rb = 8;
+	compile_func(funcs->f.b.n1);
+	if(funcs->f.b.n2 != NULL) {
+		printf("\n");
+		compile_funcs(funcs->f.b.n2);
+	}
+}
+
 
 void compile_program(NODE * program)
 {
@@ -138,6 +204,8 @@ void compile_program(NODE * program)
 	printf("\n\t.text\n");
 	printf("main:");
 	/* print out main */
+	rp = 0;
+	rb = 0;
 	compile_func(main);
 	/* terminate program */
 	printf("\tli $v0, 10\n");
