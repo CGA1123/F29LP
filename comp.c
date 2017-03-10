@@ -116,6 +116,90 @@ NODE * remove_function(NODE * program, NODE * main)
 	return program;
 }
 
+void compile_expr(NODE * expr)
+{
+	int var;
+	switch(expr->tag) {
+	case NAME:
+		var = findvar(expr->f.id);
+		if(var == -1) {
+			fprintf(stderr, "Undeclared variable %s\n", expr->f.id);
+		}
+		printf("\tadd %s %s 0\n", regname(E2), regname(var));
+		break;
+	case NUMBER:
+		printf("\tli %s %d\n", regname(E2), expr->f.value);
+		break;
+	case FUNCTION:
+		printf("\tfunction call\n");
+		break;
+	default:
+		fprintf(stderr, "Malformed expression: %s\n", showSymb(expr->tag));
+		exit(1);
+	}
+}
+
+void compile_assign(NODE * assign)
+{
+	char * var = (assign->f.b.n1)->f.id;
+	int reg = findvar(var);
+	if(reg == -1) {
+		fprintf(stderr, "variable does not exist: %s\n", var);
+	}
+	char * reg_s = regname(reg);
+
+	/* evaluate expr into E2 */
+	compile_expr(assign->f.b.n2);
+
+	/* move E2 to reg */
+	printf("\tadd %s %s 0\n", regname(reg), regname(E2));
+}
+
+void compile_if(NODE * if_command)
+{}
+
+void compile_while(NODE * while_command)
+{}
+
+void compile_write(NODE * write)
+{}
+
+void compile_read(NODE * read)
+{}
+
+void compile_command(NODE * command)
+{
+	switch(command->tag){
+	case ASSIGN:
+		compile_assign(command);
+		break;
+	case IF:
+		compile_if(command);
+		break;
+	case WHILE:
+		compile_while(command);
+		break;
+	case WRITE:
+		compile_write(command);
+		break;
+	case READ:
+		compile_read(command);
+		break;
+	default:
+		fprintf(stderr, "unrecognised command: %s\n", showSymb(command->tag));
+		exit(1);
+	}
+}
+
+void compile_commands(NODE * commands)
+{
+	compile_command(commands->f.b.n1);
+
+	if(commands->f.b.n2 != NULL) {
+		compile_commands(commands->f.b.n2);
+	}
+}
+
 void compile_func(NODE * func)
 {
 	NODE *args, *vars, *commands, *returns;
@@ -178,6 +262,7 @@ void compile_func(NODE * func)
 		}
 	}
 	/* COMMANDS */
+	compile_commands(commands);
 }
 
 void compile_funcs(NODE * funcs)

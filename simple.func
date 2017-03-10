@@ -3,7 +3,7 @@ begin
   y := Plus(x,1);
 end function;
 
-function MyTimes(x, y) returns times
+function Mult(x, y) returns times
 variables i
 begin
   times := 0;
@@ -22,7 +22,7 @@ begin
   read a;
   read b;
   x := Times(a,b);
-  y := MyTimes(a,b);
+  y := Mult(a,b);
   if Eq(x,y)
   then write 1;
   else write 0;

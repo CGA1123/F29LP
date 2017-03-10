@@ -378,11 +378,13 @@ NODE * expr(int depth)
 	NODE * node;
 
 	if (symb == NAME) {
-		node = new_node(LBRA);
-		node->f.b.n1 = new_name(yytext);
+		node = new_name(yytext);
 		lex(); /* lex name */
 
 		if (symb == LBRA) {
+			NODE * function = new_node(FUNCTION);
+			function->f.b.n1 = node;
+			node = function;
 			lex(); /* lex LBRA */
 			node->f.b.n2 = exprs(depth+1);
 
