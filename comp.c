@@ -125,10 +125,10 @@ void compile_expr(NODE * expr)
 		if(var == -1) {
 			fprintf(stderr, "Undeclared variable %s\n", expr->f.id);
 		}
-		printf("\tadd %s %s 0\n", regname(E2), regname(var));
+		printf("\tadd %s, %s, 0\n", regname(E2), regname(var));
 		break;
 	case NUMBER:
-		printf("\tli %s %d\n", regname(E2), expr->f.value);
+		printf("\tli %s, %d\n", regname(E2), expr->f.value);
 		break;
 	case FUNCTION:
 		printf("\tfunction call\n");
@@ -152,8 +152,9 @@ void compile_assign(NODE * assign)
 	compile_expr(assign->f.b.n2);
 
 	/* move E2 to reg */
-	printf("\tadd %s %s 0\n", regname(reg), regname(E2));
+	printf("\tadd %s, %s, 0\n", regname(reg), regname(E2));
 }
+
 
 void compile_if(NODE * if_command)
 {}
@@ -162,10 +163,31 @@ void compile_while(NODE * while_command)
 {}
 
 void compile_write(NODE * write)
-{}
+{
+	compile_expr(write->f.b.n1);
+	printf("\tadd $a0, %s, 0\n", regname(E2));
+	printf("\tli $v0, 1\n");
+	printf("\tsyscall\n");
+	printf("\tli $a0, 0xA\n");
+    printf("\tli $v0, 11\n");
+	printf("\tsyscall\n");
+}
 
 void compile_read(NODE * read)
-{}
+{
+	int var = findvar((read->f.b.n1)->f.id);
+	if(var == -1) {
+		fprintf(stderr, "Undeclared variable %s\n", (read->f.b.n1)->f.id);
+	}
+
+	printf("\tli $v0, 4\n");
+	printf("\tla $a0, sinp\n");
+	printf("\tsyscall\n");
+
+	printf("\tli $v0, 5\n");
+	printf("\tsyscall\n");
+	printf("\tadd %s, $v0, 0\n", regname(var));
+}
 
 void compile_command(NODE * command)
 {
@@ -297,7 +319,8 @@ void compile_program(NODE * program)
 	printf("\tsyscall\n\n");
 
 	/* print out all other functions... */
-	compile_funcs(funcs);
+	if(funcs != NULL)
+		compile_funcs(funcs);
 
 	return;
 }
