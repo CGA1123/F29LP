@@ -3,6 +3,9 @@ variables a, b, x, y
 begin
   read a;
   read b;
-  write a;
-  write a;
+  if Less(a,b) then
+    write a;
+  else
+    write b;
+  end if;
 end function;

@@ -367,7 +367,7 @@ NODE * exprs(int depth)
 
 	if (symb == COMMA) {
 		lex(); /* eat up COMMA */
-		node->f.b.n2 = expr(depth);
+		node->f.b.n2 = exprs(depth);
 	}
 
 	return node;

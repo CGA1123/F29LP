@@ -12,6 +12,9 @@ extern NODE * program(int depth);
 extern FILE * yyin;
 extern char * showSymb(int);
 
+/* function prototypes */
+void compile_commands(NODE * commands);
+
 /* our registers */
 #define MAXREG 16		/* $s0-$s7, $t0-$t7 */
 #define A0 MAXREG		/* $a0 */
@@ -116,6 +119,18 @@ NODE * remove_function(NODE * program, NODE * main)
 	return program;
 }
 
+void push(int reg_no)
+{
+	printf("\taddi $sp, $sp, -4\n");
+	printf("\tsw %s, 0($sp)\n", regname(reg_no));
+}
+
+void pop(int reg_no)
+{
+	printf("\tlw %s,0($sp)\n", regname(reg_no));
+	printf("\taddi $sp, $sp, 4\n");
+}
+
 void compile_expr(NODE * expr)
 {
 	int var;
@@ -139,6 +154,18 @@ void compile_expr(NODE * expr)
 	}
 }
 
+char * condexpr_string(NODE * condexpr) {
+	switch(condexpr->tag) {
+	case LT:	return "ge";
+	case LTE:	return "gt";
+	case EQ:	return "nq";
+	case NEQ:	return "eq";
+	default:
+		fprintf(stderr, "Unknown condition expression...");
+		exit(1);
+	}
+}
+
 void compile_assign(NODE * assign)
 {
 	char * var = (assign->f.b.n1)->f.id;
@@ -157,7 +184,43 @@ void compile_assign(NODE * assign)
 
 
 void compile_if(NODE * if_command)
-{}
+{
+	NODE * condexpr = if_command->f.b.n1;
+	printf("IF%d:\n", label_no);
+	/* Evaluate conditional */
+	/* Get our 2 args, fail if we have more than 2... */
+	NODE * exprs = condexpr->f.b.n1;
+	NODE * a0 = exprs->f.b.n1;
+	exprs = exprs->f.b.n2;
+	NODE * a1 = exprs->f.b.n1;
+	if(exprs->f.b.n2 != NULL) {
+		fprintf(stderr, "Binary Operator %s only accepts 2 args.\n", condexpr_string(condexpr));
+		exit(1);
+	}
+	/* compile_expr evaluates to E2 ($t9) */
+	compile_expr(a0);
+	push(E2);
+	compile_expr(a1);
+	pop(E1);
+
+	/* branching */
+	if((if_command->f.b.n2)->tag == ELSE){
+		NODE * cmds = if_command->f.b.n2;
+		printf("\tb%s $t8, $t9, ELSE%d\n", condexpr_string(condexpr), label_no);
+		/* prinf IF commands*/
+		compile_commands(cmds->f.b.n1);
+		printf("\tj ENDIF%d\n", label_no);
+		printf("\tELSE%d:\n", label_no);
+		/* print ELSE commands */
+		compile_commands(cmds->f.b.n2);
+	} else {
+		printf("\tb%s $t8, $t9, ENDIF%d\n", condexpr_string(condexpr), label_no);
+		/* prinf IF commands*/
+		compile_commands(if_command->f.b.n2);
+	}
+	printf("ENDIF%d:\n", label_no);
+	label_no++;
+}
 
 void compile_while(NODE * while_command)
 {}
@@ -290,7 +353,7 @@ void compile_func(NODE * func)
 void compile_funcs(NODE * funcs)
 {
 	char * name = (((funcs->f.b.n1)->f.b.n2)->f.b.n1)->f.id;
-	printf("%s:", name);
+	printf("%s:\n", name);
 	rp = 8;
 	rb = 8;
 	compile_func(funcs->f.b.n1);
@@ -309,7 +372,7 @@ void compile_program(NODE * program)
 	printf("\t.data\n");
 	printf("sinp:\t.asciiz \"INPUT> \"\n");
 	printf("\n\t.text\n");
-	printf("main:");
+	printf("main:\n");
 	/* print out main */
 	rp = 0;
 	rb = 0;
