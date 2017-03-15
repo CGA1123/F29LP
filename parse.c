@@ -30,10 +30,10 @@ NODE * read(int depth);
 NODE * write(int depth);
 
 void rule(char * name,int depth)
-{	int i;
+{/*	int i;
 	for(i=0;i<depth;i++)
 		printf(" ");
-	printf("%s\n",name);
+	printf("%s\n",name); */
 }
 
 void error(char * rule,char * message)
@@ -211,7 +211,9 @@ NODE * commands(int depth)
 
 	if (symb == SEMI) {
 		lex(); /* eat semi */
-		node->f.b.n2 = commands(depth);
+		/* check if we have more commands... */
+		if(symb == NAME || symb == IF || symb == WHILE || symb == READ || symb == WRITE)
+			node->f.b.n2 = commands(depth);
 	} else {
 		error("commands", ";");
 	}
@@ -365,7 +367,7 @@ NODE * exprs(int depth)
 
 	if (symb == COMMA) {
 		lex(); /* eat up COMMA */
-		node->f.b.n2 = expr(depth);
+		node->f.b.n2 = exprs(depth);
 	}
 
 	return node;
@@ -376,11 +378,13 @@ NODE * expr(int depth)
 	NODE * node;
 
 	if (symb == NAME) {
-		node = new_node(LBRA);
-		node->f.b.n1 = new_name(yytext);
+		node = new_name(yytext);
 		lex(); /* lex name */
 
 		if (symb == LBRA) {
+			NODE * function = new_node(FUNCTION);
+			function->f.b.n1 = node;
+			node = function;
 			lex(); /* lex LBRA */
 			node->f.b.n2 = exprs(depth+1);
 
@@ -400,7 +404,8 @@ NODE * expr(int depth)
 	return node;
 }
 
-NODE * write(int depth) {
+NODE * write(int depth)
+{
 	rule("write",depth);
 	NODE * node;
 	node = new_node(WRITE);
@@ -410,7 +415,8 @@ NODE * write(int depth) {
 	return node;
 }
 
-NODE * read(int depth) {
+NODE * read(int depth)
+{
 	rule("read",depth);
 	lex(); /* lext READ */
 	NODE * node;
@@ -426,6 +432,7 @@ NODE * read(int depth) {
 	return node;
 }
 
+/*
 int main(int c,char ** argv)
 {	if ((yyin=fopen(argv[1],"r"))==NULL) {
 		printf("can't open %s\n",argv[1]);
@@ -438,3 +445,4 @@ int main(int c,char ** argv)
 	prettytree(tree, 0);
 	return 0;
 }
+*/
