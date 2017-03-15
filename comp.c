@@ -195,7 +195,8 @@ void compile_expr(NODE * expr)
 	}
 }
 
-char * condexpr_string(NODE * condexpr) {
+char * condexpr_string(NODE * condexpr)
+{
 	switch(condexpr->tag) {
 	case LT:	return "ge";
 	case LTE:	return "gt";
@@ -222,7 +223,6 @@ void compile_assign(NODE * assign)
 	/* move E2 to reg */
 	printf("\tadd %s, %s, 0\n", regname(reg), regname(E2));
 }
-
 
 void compile_if(NODE * if_command)
 {
@@ -429,7 +429,6 @@ void compile_funcs(NODE * funcs)
 		compile_funcs(funcs->f.b.n2);
 	}
 }
-
 
 void compile_program(NODE * program)
 {

@@ -404,7 +404,8 @@ NODE * expr(int depth)
 	return node;
 }
 
-NODE * write(int depth) {
+NODE * write(int depth)
+{
 	rule("write",depth);
 	NODE * node;
 	node = new_node(WRITE);
@@ -414,7 +415,8 @@ NODE * write(int depth) {
 	return node;
 }
 
-NODE * read(int depth) {
+NODE * read(int depth)
+{
 	rule("read",depth);
 	lex(); /* lext READ */
 	NODE * node;
