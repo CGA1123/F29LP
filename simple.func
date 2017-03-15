@@ -8,4 +8,9 @@ begin
   else
     write b;
   end if;
+
+  while Less(a,b) loop
+    write b;
+    b := Minus(b,1);
+  end loop;
 end function;

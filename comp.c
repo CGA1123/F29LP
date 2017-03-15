@@ -14,6 +14,7 @@ extern char * showSymb(int);
 
 /* function prototypes */
 void compile_commands(NODE * commands);
+void compile_expr(NODE * expr);
 
 /* our registers */
 #define MAXREG 16		/* $s0-$s7, $t0-$t7 */
@@ -131,6 +132,46 @@ void pop(int reg_no)
 	printf("\taddi $sp, $sp, 4\n");
 }
 
+void compile_function_call(NODE * func_call)
+{
+	/* evaluate function and store result in E2 ($t9) */
+	/* check if we're dealing with a built-in*/
+	char * name = (func_call->f.b.n1)->f.id;
+	NODE * args = func_call->f.b.n2;
+	if(strcmp(name, "Add") == 0 ||
+	   strcmp(name, "Minus") == 0 ||
+	   strcmp(name, "Mulitply") == 0 ||
+	   strcmp(name, "Divide") == 0) {
+		NODE * a0 = args->f.b.n1;
+		args = args->f.b.n2;
+		NODE * a1 = args->f.b.n1;
+		if(args->f.b.n2 != NULL) {
+			fprintf(stderr, "Built In Function %s only accepts 2 args.\n", name);
+			exit(1);
+		}
+		/* compile_expr evaluates to E2 ($t9) */
+		compile_expr(a0);
+		push(E2);
+		compile_expr(a1);
+		pop(E1);/* Move Args intp E1 & E2 */
+		if(strcmp(name, "Add") == 0) {
+			printf("\tadd %s %s %s\n", regname(E2), regname(E1), regname(E2));
+		} else if(strcmp(name, "Minus") == 0) {
+			printf("\tsub %s %s %s\n", regname(E2), regname(E1), regname(E2));
+		} else if(strcmp(name, "Times") == 0) {
+			printf("\tmult %s %s %s\n", regname(E2), regname(E1), regname(E2));
+		} else if(strcmp(name, "Divide") == 0) {
+			printf("\tdiv %s %s %s\n", regname(E2), regname(E1), regname(E2));
+		} else {
+		/* We Have a User defined function! */
+			fprintf(stderr, "Bad things have happened, when they really shouldn't have... Bye!\n");
+			exit(1);
+		}
+	} else {
+		printf("\tUser Defined Func!\n");
+	}
+}
+
 void compile_expr(NODE * expr)
 {
 	int var;
@@ -146,7 +187,7 @@ void compile_expr(NODE * expr)
 		printf("\tli %s, %d\n", regname(E2), expr->f.value);
 		break;
 	case FUNCTION:
-		printf("\tfunction call\n");
+		compile_function_call(expr);
 		break;
 	default:
 		fprintf(stderr, "Malformed expression: %s\n", showSymb(expr->tag));
@@ -223,7 +264,33 @@ void compile_if(NODE * if_command)
 }
 
 void compile_while(NODE * while_command)
-{}
+{
+	NODE * condexpr, * commands;
+	condexpr = while_command->f.b.n1;
+	commands = while_command->f.b.n2;
+	printf("LOOP%d:\n", label_no);
+	/* Evaluate conditional */
+	/* Get our 2 args, fail if we have more than 2... */
+	NODE * exprs = condexpr->f.b.n1;
+	NODE * a0 = exprs->f.b.n1;
+	exprs = exprs->f.b.n2;
+	NODE * a1 = exprs->f.b.n1;
+	if(exprs->f.b.n2 != NULL) {
+		fprintf(stderr, "Binary Operator %s only accepts 2 args.\n", condexpr_string(condexpr));
+		exit(1);
+	}
+	/* compile_expr evaluates to E2 ($t9) */
+	compile_expr(a0);
+	push(E2);
+	compile_expr(a1);
+	pop(E1);
+	printf("\tb%s $t8, $t9, ENDLOOP%d\n", condexpr_string(condexpr), label_no);
+	/* print commands */
+	compile_commands(while_command->f.b.n2);
+	printf("\tj LOOP%d\n", label_no);
+	printf("ENDLOOP%d:\n", label_no);
+	label_no++;
+}
 
 void compile_write(NODE * write)
 {
