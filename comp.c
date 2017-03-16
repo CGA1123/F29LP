@@ -138,7 +138,7 @@ void compile_function_call(NODE * func_call)
 	/* check if we're dealing with a built-in*/
 	char * name = (func_call->f.b.n1)->f.id;
 	NODE * args = func_call->f.b.n2;
-	if(strcmp(name, "Add") == 0 ||
+	if(strcmp(name, "Plus") == 0 ||
 	   strcmp(name, "Minus") == 0 ||
 	   strcmp(name, "Mulitply") == 0 ||
 	   strcmp(name, "Divide") == 0) {
@@ -154,21 +154,30 @@ void compile_function_call(NODE * func_call)
 		push(E2);
 		compile_expr(a1);
 		pop(E1);/* Move Args intp E1 & E2 */
-		if(strcmp(name, "Add") == 0) {
-			printf("\tadd %s %s %s\n", regname(E2), regname(E1), regname(E2));
+		if(strcmp(name, "Plus") == 0) {
+			printf("\tadd %s, %s, %s\n", regname(E2), regname(E1), regname(E2));
 		} else if(strcmp(name, "Minus") == 0) {
-			printf("\tsub %s %s %s\n", regname(E2), regname(E1), regname(E2));
+			printf("\tsub %s, %s, %s\n", regname(E2), regname(E1), regname(E2));
 		} else if(strcmp(name, "Times") == 0) {
-			printf("\tmult %s %s %s\n", regname(E2), regname(E1), regname(E2));
+			printf("\tmult %s, %s, %s\n", regname(E2), regname(E1), regname(E2));
 		} else if(strcmp(name, "Divide") == 0) {
-			printf("\tdiv %s %s %s\n", regname(E2), regname(E1), regname(E2));
+			printf("\tdiv %s, %s, %s\n", regname(E2), regname(E1), regname(E2));
 		} else {
 		/* We Have a User defined function! */
 			fprintf(stderr, "Bad things have happened, when they really shouldn't have... Bye!\n");
 			exit(1);
 		}
 	} else {
-		printf("\tUser Defined Func!\n");
+		NODE * a0 = args->f.b.n1;
+		if(args->f.b.n2 != NULL) {
+			exit(1);
+		}
+		/* compile_expr evaluates to E2 ($t9) */
+		/* TODO: need to accept more than just 1 arg... */
+		compile_expr(a0);
+		printf("\taddi %s, %s, 0\n", regname(A0), regname(E2));
+		printf("\tjal %s\n", name);
+		printf("\taddi %s, %s, 0\n", regname(E2), regname(V0));
 	}
 }
 
@@ -294,13 +303,17 @@ void compile_while(NODE * while_command)
 
 void compile_write(NODE * write)
 {
+	push(A0);
+	push(V0);
 	compile_expr(write->f.b.n1);
 	printf("\tadd $a0, %s, 0\n", regname(E2));
 	printf("\tli $v0, 1\n");
 	printf("\tsyscall\n");
 	printf("\tli $a0, 0xA\n");
-    printf("\tli $v0, 11\n");
+	printf("\tli $v0, 11\n");
 	printf("\tsyscall\n");
+	pop(V0);
+	pop(A0);
 }
 
 void compile_read(NODE * read)
@@ -309,7 +322,8 @@ void compile_read(NODE * read)
 	if(var == -1) {
 		fprintf(stderr, "Undeclared variable %s\n", (read->f.b.n1)->f.id);
 	}
-
+	push(A0);
+	push(V0);
 	printf("\tli $v0, 4\n");
 	printf("\tla $a0, sinp\n");
 	printf("\tsyscall\n");
@@ -317,6 +331,8 @@ void compile_read(NODE * read)
 	printf("\tli $v0, 5\n");
 	printf("\tsyscall\n");
 	printf("\tadd %s, $v0, 0\n", regname(var));
+	pop(V0);
+	pop(A0);
 }
 
 void compile_command(NODE * command)
@@ -415,6 +431,9 @@ void compile_func(NODE * func)
 	}
 	/* COMMANDS */
 	compile_commands(commands);
+
+	if(rb == 8)
+		printf("\tjr $ra\n");
 }
 
 void compile_funcs(NODE * funcs)
