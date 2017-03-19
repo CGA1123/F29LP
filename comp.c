@@ -168,14 +168,23 @@ void compile_function_call(NODE * func_call)
 			exit(1);
 		}
 	} else {
-		NODE * a0 = args->f.b.n1;
+		/* Move args into a0-a3*/
+		NODE * arg;
+		int i;
+		for(i = 0; i<4; i++) {
+			arg = args->f.b.n1;
+			compile_expr(arg);
+			printf("\taddi %s, %s, 0\n", regname(A0+i), regname(E2));
+			if(args->f.b.n2 == NULL) break;
+			args = args->f.b.n2;
+		}
+
 		if(args->f.b.n2 != NULL) {
+			fprintf(stderr, "Max 4 args in function call\n");
 			exit(1);
 		}
-		/* compile_expr evaluates to E2 ($t9) */
-		/* TODO: need to accept more than just 1 arg... */
-		compile_expr(a0);
-		printf("\taddi %s, %s, 0\n", regname(A0), regname(E2));
+
+		/* call function */
 		printf("\tjal %s\n", name);
 		printf("\taddi %s, %s, 0\n", regname(E2), regname(V0));
 	}

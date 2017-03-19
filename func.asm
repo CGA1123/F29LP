@@ -51,36 +51,6 @@ LOOP0:
 	lw $t8,0($sp)
 	addi $sp, $sp, 4
 	bge $t8, $t9, ENDLOOP0
-	addi $sp, $sp, -4
-	sw $a0, 0($sp)
-	addi $sp, $sp, -4
-	sw $v0, 0($sp)
-	add $t9, $v0, 0
-	add $a0, $t9, 0
-	li $v0, 1
-	syscall
-	li $a0, 0xA
-	li $v0, 11
-	syscall
-	lw $v0,0($sp)
-	addi $sp, $sp, 4
-	lw $a0,0($sp)
-	addi $sp, $sp, 4
-	addi $sp, $sp, -4
-	sw $a0, 0($sp)
-	addi $sp, $sp, -4
-	sw $v0, 0($sp)
-	add $t9, $a0, 0
-	add $a0, $t9, 0
-	li $v0, 1
-	syscall
-	li $a0, 0xA
-	li $v0, 11
-	syscall
-	lw $v0,0($sp)
-	addi $sp, $sp, 4
-	lw $a0,0($sp)
-	addi $sp, $sp, 4
 	add $t9, $v0, 0
 	addi $sp, $sp, -4
 	sw $t9, 0($sp)
@@ -97,36 +67,6 @@ LOOP0:
 	addi $sp, $sp, 4
 	sub $t9, $t8, $t9
 	add $a0, $t9, 0
-	addi $sp, $sp, -4
-	sw $a0, 0($sp)
-	addi $sp, $sp, -4
-	sw $v0, 0($sp)
-	add $t9, $v0, 0
-	add $a0, $t9, 0
-	li $v0, 1
-	syscall
-	li $a0, 0xA
-	li $v0, 11
-	syscall
-	lw $v0,0($sp)
-	addi $sp, $sp, 4
-	lw $a0,0($sp)
-	addi $sp, $sp, 4
-	addi $sp, $sp, -4
-	sw $a0, 0($sp)
-	addi $sp, $sp, -4
-	sw $v0, 0($sp)
-	add $t9, $a0, 0
-	add $a0, $t9, 0
-	li $v0, 1
-	syscall
-	li $a0, 0xA
-	li $v0, 11
-	syscall
-	lw $v0,0($sp)
-	addi $sp, $sp, 4
-	lw $a0,0($sp)
-	addi $sp, $sp, 4
 	j LOOP0
 ENDLOOP0:
 	jr $ra

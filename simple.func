@@ -2,12 +2,8 @@ function Sum (inp) returns res
 begin
   res := 0;
   while Less(0,inp) loop
-    write res;
-    write inp;
     res := Plus(res,inp);
     inp := Minus(inp,1);
-    write res;
-    write inp;
   end loop;
 end function;
 
