@@ -1,16 +1,16 @@
-function Main()
-variables a, b, x, y
+function Sum (inp) returns res
 begin
-  read a;
-  read b;
-  if Less(a,b) then
-    write a;
-  else
-    write b;
-  end if;
-
-  while Less(a,b) loop
-    write b;
-    b := Minus(b,1);
+  res := 0;
+  while Less(0,inp) loop
+    res := Plus(res,inp);
+    inp := Minus(inp,1);
   end loop;
+end function;
+
+function Main ()
+variables inp,res
+begin
+  read inp;
+  res := Sum(inp);
+  write res;
 end function;
