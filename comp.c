@@ -142,7 +142,7 @@ void compile_function_call(NODE * func_call)
 	NODE * args = func_call->f.b.n2;
 	if(strcmp(name, "Plus") == 0 ||
 	   strcmp(name, "Minus") == 0 ||
-	   strcmp(name, "Mulitply") == 0 ||
+	   strcmp(name, "Times") == 0 ||
 	   strcmp(name, "Divide") == 0) {
 		NODE * a0 = args->f.b.n1;
 		args = args->f.b.n2;
@@ -161,9 +161,11 @@ void compile_function_call(NODE * func_call)
 		} else if(strcmp(name, "Minus") == 0) {
 			printf("\tsub %s, %s, %s\n", regname(E2), regname(E1), regname(E2));
 		} else if(strcmp(name, "Times") == 0) {
-			printf("\tmult %s, %s, %s\n", regname(E2), regname(E1), regname(E2));
+			printf("\tmult %s, %s\n", regname(E2), regname(E1));
+			printf("\tmflo %s\n", regname(E2));
 		} else if(strcmp(name, "Divide") == 0) {
-			printf("\tdiv %s, %s, %s\n", regname(E2), regname(E1), regname(E2));
+			printf("\tdiv %s, %s\n", regname(E2), regname(E1));
+			printf("\tmflo %s\n", regname(E2));
 		} else {
 		/* We Have a User defined function! */
 			fprintf(stderr, "Bad things have happened, when they really shouldn't have... Bye!\n");

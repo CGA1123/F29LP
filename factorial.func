@@ -1,0 +1,16 @@
+function Factorial(n) returns result
+begin
+  if Eq(0,n) then
+    result := 1;
+  else
+    result := Times(n,Factorial(Minus(n,1)));
+  end if;
+end function;
+
+function Main ()
+variables input, result
+begin
+  read input;
+  result := Factorial(input);
+  write result;
+end function;
