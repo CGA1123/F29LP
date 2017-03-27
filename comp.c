@@ -173,10 +173,7 @@ void compile_function_call(NODE * func_call)
 		}
 	} else {
 		/* push stack frame! */
-		/* local copy of rp & rb */
-		int rbc, rpc, i;
-		rbc = rb;
-		rpc = rp;
+		int i;
 
 		/* push args */
 		for(i=MAXREG;i<MAXREG+4;i++) {
@@ -216,8 +213,7 @@ void compile_function_call(NODE * func_call)
 		/* pop stack frame */
 		pop(RA);
 		pop(V0);
-		rp = rbc;
-		rp = rpc;
+
 		for(i=(rp-1);i>=rb;i--) {
 			pop(i);
 		}
@@ -283,7 +279,9 @@ void compile_assign(NODE * assign)
 void compile_if(NODE * if_command)
 {
 	NODE * condexpr = if_command->f.b.n1;
-	printf("IF%d:\n", label_no);
+	int labn = label_no;
+	label_no++;
+	printf("IF%d:\n", labn);
 	/* Evaluate conditional */
 	/* Get our 2 args, fail if we have more than 2... */
 	NODE * exprs = condexpr->f.b.n1;
@@ -303,20 +301,19 @@ void compile_if(NODE * if_command)
 	/* branching */
 	if((if_command->f.b.n2)->tag == ELSE){
 		NODE * cmds = if_command->f.b.n2;
-		printf("\tb%s $t8, $t9, ELSE%d\n", condexpr_string(condexpr), label_no);
+		printf("\tb%s $t8, $t9, ELSE%d\n", condexpr_string(condexpr), labn);
 		/* prinf IF commands*/
 		compile_commands(cmds->f.b.n1);
-		printf("\tj ENDIF%d\n", label_no);
-		printf("\tELSE%d:\n", label_no);
+		printf("\tj ENDIF%d\n", labn);
+		printf("\tELSE%d:\n", labn);
 		/* print ELSE commands */
 		compile_commands(cmds->f.b.n2);
 	} else {
-		printf("\tb%s $t8, $t9, ENDIF%d\n", condexpr_string(condexpr), label_no);
+		printf("\tb%s $t8, $t9, ENDIF%d\n", condexpr_string(condexpr), labn);
 		/* prinf IF commands*/
 		compile_commands(if_command->f.b.n2);
 	}
-	printf("ENDIF%d:\n", label_no);
-	label_no++;
+	printf("ENDIF%d:\n", labn);
 }
 
 void compile_while(NODE * while_command)
@@ -324,7 +321,9 @@ void compile_while(NODE * while_command)
 	NODE * condexpr, * commands;
 	condexpr = while_command->f.b.n1;
 	commands = while_command->f.b.n2;
-	printf("LOOP%d:\n", label_no);
+	int labn = label_no;
+	label_no++;
+	printf("LOOP%d:\n", labn);
 	/* Evaluate conditional */
 	/* Get our 2 args, fail if we have more than 2... */
 	NODE * exprs = condexpr->f.b.n1;
@@ -340,12 +339,11 @@ void compile_while(NODE * while_command)
 	push(E2);
 	compile_expr(a1);
 	pop(E1);
-	printf("\tb%s $t8, $t9, ENDLOOP%d\n", condexpr_string(condexpr), label_no);
+	printf("\tb%s $t8, $t9, ENDLOOP%d\n", condexpr_string(condexpr), labn);
 	/* print commands */
 	compile_commands(while_command->f.b.n2);
-	printf("\tj LOOP%d\n", label_no);
-	printf("ENDLOOP%d:\n", label_no);
-	label_no++;
+	printf("\tj LOOP%d\n", labn);
+	printf("ENDLOOP%d:\n", labn);
 }
 
 void compile_write(NODE * write)
