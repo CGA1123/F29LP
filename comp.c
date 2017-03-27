@@ -25,11 +25,12 @@ void compile_expr(NODE * expr);
 #define E1 MAXREG+4		/* $t8 */
 #define E2 MAXREG+5		/* $t9 */
 #define V0 MAXREG+6		/* $v0 */
+#define RA MAXREG+7
 char * registers[MAXREG];	/* store what var is assocd to a register */
 char * argv[4];
 char * v0s;
-int rp, rb, label_no, argc;		/* track next free register index, and what
-								 * label number we are on. */
+int rp, rb, label_no, argc;	/* track next free register index, and what
+				 * label number we are on. */
 
 /* return index of register where a var is stored
  * returns -1 if no var found */
@@ -68,6 +69,7 @@ char * regname(int r)
 	case A2: return "$a2";
 	case A3: return "$a3";
 	case V0: return "$v0";
+	case RA: return "$ra";
 	default:
 		if(r<8) {
 			sprintf(rnum, "$s%d", r);
@@ -168,10 +170,31 @@ void compile_function_call(NODE * func_call)
 			exit(1);
 		}
 	} else {
+		/* push stack frame! */
+		/* local copy of rp & rb */
+		int rbc, rpc, i;
+		rbc = rb;
+		rpc = rp;
+
+		/* push args */
+		for(i=MAXREG;i<MAXREG+4;i++) {
+			push(i);
+		}
+
+		/* push variables */
+		for(i=rb;i<rp;i++) {
+			push(i);
+		}
+
+		/* push v0 (return value) */
+		push(V0);
+
+		/* push ra (retunr address) */
+		push(RA);
+
 		/* Move args into a0-a3*/
 		NODE * arg;
-		int i;
-		for(i = 0; i<4; i++) {
+		for(i=0;i<4;i++) {
 			arg = args->f.b.n1;
 			compile_expr(arg);
 			printf("\taddi %s, %s, 0\n", regname(A0+i), regname(E2));
@@ -187,6 +210,19 @@ void compile_function_call(NODE * func_call)
 		/* call function */
 		printf("\tjal %s\n", name);
 		printf("\taddi %s, %s, 0\n", regname(E2), regname(V0));
+
+		/* pop stack frame */
+		pop(RA);
+		pop(V0);
+		rp = rbc;
+		rp = rpc;
+		for(i=(rp-1);i>=rb;i--) {
+			pop(i);
+		}
+
+		for(i=MAXREG+3;i>=MAXREG;i--) {
+			pop(i);
+		}
 	}
 }
 
@@ -218,7 +254,7 @@ char * condexpr_string(NODE * condexpr)
 	switch(condexpr->tag) {
 	case LT:	return "ge";
 	case LTE:	return "gt";
-	case EQ:	return "nq";
+	case EQ:	return "ne";
 	case NEQ:	return "eq";
 	default:
 		fprintf(stderr, "Unknown condition expression...");
