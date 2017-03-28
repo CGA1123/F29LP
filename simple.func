@@ -1,10 +1,12 @@
 function Sum (inp) returns res
+variables tmp
 begin
-  res := 0;
-  while Less(0,inp) loop
-    res := Plus(res,inp);
-    inp := Minus(inp,1);
-  end loop;
+  if Eq(inp,0) then
+    res := inp;
+  else
+    tmp := Sum(Minus(inp,1));
+    res := Plus(tmp,inp);
+  end if;
 end function;
 
 function Main ()

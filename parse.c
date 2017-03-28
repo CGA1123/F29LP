@@ -37,8 +37,8 @@ void rule(char * name,int depth)
 }
 
 void error(char * rule,char * message)
-{	printf("%s: found %s\n",rule,showSymb(symb));
-	printf("%s: expected %s\n",rule,message);
+{	fprintf(stderr, "%s: found %s\n",rule,showSymb(symb));
+	fprintf(stderr, "%s: expected %s\n",rule,message);
 	exit(0);
 }
 
@@ -77,7 +77,6 @@ NODE * new_node(int tag)
 /* Le rules... */
 NODE * program(int depth)
 {	rule("program",depth);
-
 	NODE * node;
 	if (symb == FUNCTION) {
 		node = funcs(depth+1);
@@ -119,6 +118,7 @@ NODE * funcs(int depth)
 
 NODE * func(int depth)
 {	rule("func",depth);
+
 	lex();
 	NODE * node, * definition, * arguments, * returns, * variables;
 	arguments = NULL;

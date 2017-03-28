@@ -25,11 +25,12 @@ void compile_expr(NODE * expr);
 #define E1 MAXREG+4		/* $t8 */
 #define E2 MAXREG+5		/* $t9 */
 #define V0 MAXREG+6		/* $v0 */
+#define RA MAXREG+7
 char * registers[MAXREG];	/* store what var is assocd to a register */
 char * argv[4];
 char * v0s;
-int rp, rb, label_no, argc;		/* track next free register index, and what
-								 * label number we are on. */
+int rp, rb, label_no, argc;	/* track next free register index, and what
+				 * label number we are on. */
 
 /* return index of register where a var is stored
  * returns -1 if no var found */
@@ -68,6 +69,7 @@ char * regname(int r)
 	case A2: return "$a2";
 	case A3: return "$a3";
 	case V0: return "$v0";
+	case RA: return "$ra";
 	default:
 		if(r<8) {
 			sprintf(rnum, "$s%d", r);
@@ -140,7 +142,7 @@ void compile_function_call(NODE * func_call)
 	NODE * args = func_call->f.b.n2;
 	if(strcmp(name, "Plus") == 0 ||
 	   strcmp(name, "Minus") == 0 ||
-	   strcmp(name, "Mulitply") == 0 ||
+	   strcmp(name, "Times") == 0 ||
 	   strcmp(name, "Divide") == 0) {
 		NODE * a0 = args->f.b.n1;
 		args = args->f.b.n2;
@@ -159,19 +161,39 @@ void compile_function_call(NODE * func_call)
 		} else if(strcmp(name, "Minus") == 0) {
 			printf("\tsub %s, %s, %s\n", regname(E2), regname(E1), regname(E2));
 		} else if(strcmp(name, "Times") == 0) {
-			printf("\tmult %s, %s, %s\n", regname(E2), regname(E1), regname(E2));
+			printf("\tmult %s, %s\n", regname(E2), regname(E1));
+			printf("\tmflo %s\n", regname(E2));
 		} else if(strcmp(name, "Divide") == 0) {
-			printf("\tdiv %s, %s, %s\n", regname(E2), regname(E1), regname(E2));
+			printf("\tdiv %s, %s\n", regname(E2), regname(E1));
+			printf("\tmflo %s\n", regname(E2));
 		} else {
 		/* We Have a User defined function! */
 			fprintf(stderr, "Bad things have happened, when they really shouldn't have... Bye!\n");
 			exit(1);
 		}
 	} else {
+		/* push stack frame! */
+		int i;
+
+		/* push args */
+		for(i=MAXREG;i<MAXREG+4;i++) {
+			push(i);
+		}
+
+		/* push variables */
+		for(i=rb;i<rp;i++) {
+			push(i);
+		}
+
+		/* push v0 (return value) */
+		push(V0);
+
+		/* push ra (retunr address) */
+		push(RA);
+
 		/* Move args into a0-a3*/
 		NODE * arg;
-		int i;
-		for(i = 0; i<4; i++) {
+		for(i=0;i<4;i++) {
 			arg = args->f.b.n1;
 			compile_expr(arg);
 			printf("\taddi %s, %s, 0\n", regname(A0+i), regname(E2));
@@ -187,6 +209,18 @@ void compile_function_call(NODE * func_call)
 		/* call function */
 		printf("\tjal %s\n", name);
 		printf("\taddi %s, %s, 0\n", regname(E2), regname(V0));
+
+		/* pop stack frame */
+		pop(RA);
+		pop(V0);
+
+		for(i=(rp-1);i>=rb;i--) {
+			pop(i);
+		}
+
+		for(i=MAXREG+3;i>=MAXREG;i--) {
+			pop(i);
+		}
 	}
 }
 
@@ -218,7 +252,7 @@ char * condexpr_string(NODE * condexpr)
 	switch(condexpr->tag) {
 	case LT:	return "ge";
 	case LTE:	return "gt";
-	case EQ:	return "nq";
+	case EQ:	return "ne";
 	case NEQ:	return "eq";
 	default:
 		fprintf(stderr, "Unknown condition expression...");
@@ -245,7 +279,9 @@ void compile_assign(NODE * assign)
 void compile_if(NODE * if_command)
 {
 	NODE * condexpr = if_command->f.b.n1;
-	printf("IF%d:\n", label_no);
+	int labn = label_no;
+	label_no++;
+	printf("IF%d:\n", labn);
 	/* Evaluate conditional */
 	/* Get our 2 args, fail if we have more than 2... */
 	NODE * exprs = condexpr->f.b.n1;
@@ -265,20 +301,19 @@ void compile_if(NODE * if_command)
 	/* branching */
 	if((if_command->f.b.n2)->tag == ELSE){
 		NODE * cmds = if_command->f.b.n2;
-		printf("\tb%s $t8, $t9, ELSE%d\n", condexpr_string(condexpr), label_no);
+		printf("\tb%s $t8, $t9, ELSE%d\n", condexpr_string(condexpr), labn);
 		/* prinf IF commands*/
 		compile_commands(cmds->f.b.n1);
-		printf("\tj ENDIF%d\n", label_no);
-		printf("\tELSE%d:\n", label_no);
+		printf("\tj ENDIF%d\n", labn);
+		printf("\tELSE%d:\n", labn);
 		/* print ELSE commands */
 		compile_commands(cmds->f.b.n2);
 	} else {
-		printf("\tb%s $t8, $t9, ENDIF%d\n", condexpr_string(condexpr), label_no);
+		printf("\tb%s $t8, $t9, ENDIF%d\n", condexpr_string(condexpr), labn);
 		/* prinf IF commands*/
 		compile_commands(if_command->f.b.n2);
 	}
-	printf("ENDIF%d:\n", label_no);
-	label_no++;
+	printf("ENDIF%d:\n", labn);
 }
 
 void compile_while(NODE * while_command)
@@ -286,7 +321,9 @@ void compile_while(NODE * while_command)
 	NODE * condexpr, * commands;
 	condexpr = while_command->f.b.n1;
 	commands = while_command->f.b.n2;
-	printf("LOOP%d:\n", label_no);
+	int labn = label_no;
+	label_no++;
+	printf("LOOP%d:\n", labn);
 	/* Evaluate conditional */
 	/* Get our 2 args, fail if we have more than 2... */
 	NODE * exprs = condexpr->f.b.n1;
@@ -302,12 +339,11 @@ void compile_while(NODE * while_command)
 	push(E2);
 	compile_expr(a1);
 	pop(E1);
-	printf("\tb%s $t8, $t9, ENDLOOP%d\n", condexpr_string(condexpr), label_no);
+	printf("\tb%s $t8, $t9, ENDLOOP%d\n", condexpr_string(condexpr), labn);
 	/* print commands */
 	compile_commands(while_command->f.b.n2);
-	printf("\tj LOOP%d\n", label_no);
-	printf("ENDLOOP%d:\n", label_no);
-	label_no++;
+	printf("\tj LOOP%d\n", labn);
+	printf("ENDLOOP%d:\n", labn);
 }
 
 void compile_write(NODE * write)

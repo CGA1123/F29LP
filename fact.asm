@@ -35,7 +35,7 @@ main:
 	sw $ra, 0($sp)
 	add $t9, $s0, 0
 	addi $a0, $t9, 0
-	jal Sum
+	jal Factorial
 	addi $t9, $v0, 0
 	lw $ra,0($sp)
 	addi $sp, $sp, 4
@@ -72,19 +72,22 @@ main:
 	li $v0, 10
 	syscall
 
-Sum:
+Factorial:
 IF0:
-	add $t9, $a0, 0
+	li $t9, 0
 	addi $sp, $sp, -4
 	sw $t9, 0($sp)
-	li $t9, 0
+	add $t9, $a0, 0
 	lw $t8,0($sp)
 	addi $sp, $sp, 4
 	bne $t8, $t9, ELSE0
-	add $t9, $a0, 0
+	li $t9, 1
 	add $v0, $t9, 0
 	j ENDIF0
 	ELSE0:
+	add $t9, $a0, 0
+	addi $sp, $sp, -4
+	sw $t9, 0($sp)
 	addi $sp, $sp, -4
 	sw $a0, 0($sp)
 	addi $sp, $sp, -4
@@ -93,8 +96,6 @@ IF0:
 	sw $a2, 0($sp)
 	addi $sp, $sp, -4
 	sw $a3, 0($sp)
-	addi $sp, $sp, -4
-	sw $t0, 0($sp)
 	addi $sp, $sp, -4
 	sw $v0, 0($sp)
 	addi $sp, $sp, -4
@@ -107,13 +108,11 @@ IF0:
 	addi $sp, $sp, 4
 	sub $t9, $t8, $t9
 	addi $a0, $t9, 0
-	jal Sum
+	jal Factorial
 	addi $t9, $v0, 0
 	lw $ra,0($sp)
 	addi $sp, $sp, 4
 	lw $v0,0($sp)
-	addi $sp, $sp, 4
-	lw $t0,0($sp)
 	addi $sp, $sp, 4
 	lw $a3,0($sp)
 	addi $sp, $sp, 4
@@ -123,14 +122,10 @@ IF0:
 	addi $sp, $sp, 4
 	lw $a0,0($sp)
 	addi $sp, $sp, 4
-	add $t0, $t9, 0
-	add $t9, $t0, 0
-	addi $sp, $sp, -4
-	sw $t9, 0($sp)
-	add $t9, $a0, 0
 	lw $t8,0($sp)
 	addi $sp, $sp, 4
-	add $t9, $t8, $t9
+	mult $t9, $t8
+	mflo $t9
 	add $v0, $t9, 0
 ENDIF0:
 	jr $ra
